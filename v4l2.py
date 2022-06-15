@@ -294,6 +294,12 @@ v4l2_priority = enum
 ) = list(range(0, 4)) + [2]
 
 
+v4l2_subdev_format_whence = enum 
+( 
+    V4L2_SUBDEV_FORMAT_TRY,
+    V4L2_SUBDEV_FORMAT_ACTIVE,    
+) = range(0,2)
+
 class v4l2_rect(ctypes.Structure):
     _fields_ = [
         ('left', ctypes.c_int32),
@@ -929,6 +935,21 @@ class v4l2_bt_timings(ctypes.Structure):
 
     _pack_ = True
 
+class v4l2_bt_timings_caps(ctypes.Structure):
+    _fields_ = [
+        ('min_width', ctypes.c_uint32),
+        ('max_width', ctypes.c_uint32),
+        ('min_height', ctypes.c_uint32),
+        ('max_height', ctypes.c_uint32),
+        ('min_pixelclock', ctypes.c_uint32),
+        ('max_pixelclock', ctypes.c_uint32),
+        ('standards', ctypes.c_uint32),
+        ('capabilities', ctypes.c_uint32),
+        ('reserved', ctypes.c_uint32 * 16),
+    ]
+
+    _pack_ = True
+
 # Interlaced or progressive format
 V4L2_DV_PROGRESSIVE = 0
 V4L2_DV_INTERLACED = 1
@@ -953,10 +974,161 @@ class v4l2_dv_timings(ctypes.Structure):
     _anonymous_ = ('_u',)
     _pack_ = True
 
+class v4l2_dv_timings_cap(ctypes.Structure):
+    class _u(ctypes.Union):
+        _fields_ = [
+            ('bt', v4l2_bt_timings_caps),
+            ('raw_data', ctypes.c_uint32 * 32),
+        ]
+
+    _fields_ = [
+        ('type', ctypes.c_uint32),
+        ('pad', ctypes.c_uint32),
+        ('reserved', ctypes.c_uint32 * 2),
+        ('_u', _u),
+    ]
+
+    _anonymous_ = ('_u',)
+    _pack_ = True
+
+class v4l2_event_vsync(ctypes.Structure):
+    _fields_ = [
+        ('field', ctypes.c_uint8),
+    ]
+
+    _pack_ = True
+
+
+
+class v4l2_event_ctrl(ctypes.Structure):
+    class _u(ctypes.Union):
+        _fields_ = [
+            ('value', ctypes.c_int32),
+            ('value64', ctypes.c_int64),
+        ]
+
+    _fields_ = [
+        ('changes', ctypes.c_uint32),
+        ('type', ctypes.c_uint32),
+        ('_u', _u),
+        ('flags', ctypes.c_uint32),
+        ('minimum', ctypes.c_int32),
+        ('maximum', ctypes.c_int32),
+        ('step', ctypes.c_int32),
+        ('default_value', ctypes.c_int32),
+    ]
+
+    _anonymous_ = ('_u',)
+
+
+class v4l2_event_frame_sync(ctypes.Structure):
+
+    _fields_ = [
+        ('frame_sequence', ctypes.c_uint32),
+    ]
+
+
+
+class v4l2_event_src_change(ctypes.Structure):
+
+    _fields_ = [
+        ('changes', ctypes.c_uint32),
+    ]
+    
+
+class v4l2_event_motion_det(ctypes.Structure):
+
+    _fields_ = [
+        ('flags', ctypes.c_uint32),
+        ('frame_sequence', ctypes.c_uint32),
+        ('region_mask', ctypes.c_uint32),
+    ]
+
+
+class timespec(ctypes.Structure):
+    _fields_ = [
+        ('tv_sec', ctypes.c_long),
+        ('tv_usec', ctypes.c_long),
+    ]
+
+
+class v4l2_event(ctypes.Structure):
+    class _u(ctypes.Union):
+        _fields_ = [
+            ('vsync', v4l2_event_vsync),
+            ('ctrl', v4l2_event_ctrl),
+            ('frame_sync', v4l2_event_frame_sync),
+            ('src_change', v4l2_event_src_change),
+            ('motion_det', v4l2_event_motion_det),
+            ('data', ctypes.c_uint8 * 64),
+        ]
+
+    _fields_ = [
+        ('type', ctypes.c_uint32),
+        ('_u', _u),
+        ('pending', ctypes.c_uint32),
+        ('sequence', ctypes.c_uint32),
+        ('timestamp', timespec),
+        ('id', ctypes.c_uint32),
+        ('reserved', ctypes.c_uint32 * 8),
+    ]
+
+    _anonymous_ = ('_u',)
+
+
+class v4l2_event_subscription(ctypes.Structure):
+    _fields_ = [
+        ('type', ctypes.c_uint32),
+        ('id', ctypes.c_uint32),
+        ('flags', ctypes.c_uint32),
+        ('reserved', ctypes.c_uint32 * 5),
+    ]
+
+    _pack_ = True
+
+
+class v4l2_mbus_framefmt(ctypes.Structure):
+    _fields_ = [
+        ('width', ctypes.c_uint32),
+        ('height', ctypes.c_uint32),
+        ('code', ctypes.c_uint32),
+        ('field', ctypes.c_uint32),
+        ('colorspace', ctypes.c_uint32),
+        ('ycbcr_enc', ctypes.c_uint16),
+        ('quantization', ctypes.c_uint16),
+        ('xfer_func', ctypes.c_uint16),
+        ('reserved', ctypes.c_uint16 * 11)
+    ]
+
+    #_pack_ = True
+
+class v4l2_subdev_format(ctypes.Structure):
+
+    _fields_ = [
+        ('which', ctypes.c_uint32),
+        ('pad', ctypes.c_uint32),
+        ('format', v4l2_mbus_framefmt),
+        ('reserved', ctypes.c_uint32 * 8),
+    ]
+
+   # _pack_ = True
 
 # Values for the type field
 V4L2_DV_BT_656_1120 = 0
 
+# Values for events
+V4L2_EVENT_ALL             = 0
+V4L2_EVENT_VSYNC           = 1
+V4L2_EVENT_EOS             = 2
+V4L2_EVENT_CTRL            = 3
+V4L2_EVENT_FRAME_SYNC      = 4
+V4L2_EVENT_SOURCE_CHANGE   = 5
+V4L2_EVENT_MOTION_DET      = 6
+
+V4L2_EVENT_SRC_CH_RESOLUTION = (1 << 0)
+
+V4L2_EVENT_SUB_FL_SEND_INITIAL   =   (1 << 0)
+V4L2_EVENT_SUB_FL_ALLOW_FEEDBACK =   (1 << 1)
 
 #
 # Video inputs
@@ -1964,6 +2136,16 @@ class v4l2_dbg_chip_ident(ctypes.Structure):
     _pack_ = True
 
 
+class v4l2_edid(ctypes.Structure):
+
+    _fields_ = [
+        ('pad', ctypes.c_uint32),
+        ('start_block', ctypes.c_uint32),
+        ('blocks', ctypes.c_uint32),
+        ('reserved', ctypes.c_uint32 * 5),
+        ('edid', ctypes.POINTER(ctypes.c_uint8))
+    ]
+
 #
 # ioctl codes for video devices
 #
@@ -2042,7 +2224,9 @@ VIDIOC_G_DV_PRESET = _IOWR('V', 85, v4l2_dv_preset)
 VIDIOC_QUERY_DV_PRESET = _IOR('V', 86, v4l2_dv_preset)
 VIDIOC_S_DV_TIMINGS = _IOWR('V', 87, v4l2_dv_timings)
 VIDIOC_G_DV_TIMINGS = _IOWR('V', 88, v4l2_dv_timings)
-
+VIDIOC_DQEVENT = _IOR('V', 89, v4l2_event)
+VIDIOC_SUBSCRIBE_EVENT = _IOW('V', 90, v4l2_event_subscription)
+VIDIOC_UNSUBSCRIBE_EVENT = _IOW('V', 91, v4l2_event_subscription)
 VIDIOC_OVERLAY_OLD = _IOWR('V', 14, ctypes.c_int)
 VIDIOC_S_PARM_OLD = _IOW('V', 22, v4l2_streamparm)
 VIDIOC_S_CTRL_OLD = _IOW('V', 28, v4l2_control)
@@ -2052,8 +2236,123 @@ VIDIOC_CROPCAP_OLD = _IOR('V', 58, v4l2_cropcap)
 
 BASE_VIDIOC_PRIVATE = 192
 
+VIDIOC_SUBDEV_DV_TIMINGS_CAP   = _IOWR('V', 100, v4l2_dv_timings_cap)
+VIDIOC_SUBDEV_G_EDID           = _IOWR('V', 40, v4l2_edid)
+VIDIOC_SUBDEV_S_EDID           = _IOWR('V', 41, v4l2_edid)
+VIDIOC_SUBDEV_S_DV_TIMINGS     = _IOWR('V', 87, v4l2_dv_timings)
+VIDIOC_SUBDEV_G_DV_TIMINGS     = _IOWR('V', 88, v4l2_dv_timings)
+VIDIOC_SUBDEV_G_FMT            = _IOWR('V',  4, v4l2_subdev_format)
+VIDIOC_SUBDEV_S_FMT            = _IOWR('V',  5, v4l2_subdev_format)
+VIDIOC_SUBDEV_QUERY_DV_TIMINGS = _IOR('V', 99, v4l2_dv_timings)
 
 
+#media bus formats
+MEDIA_BUS_FMT_RGB444_1X12         = 0x1016
+MEDIA_BUS_FMT_RGB444_2X8_PADHI_BE =  0x1001
+MEDIA_BUS_FMT_RGB444_2X8_PADHI_LE =  0x1002
+MEDIA_BUS_FMT_RGB555_2X8_PADHI_BE =  0x1003
+MEDIA_BUS_FMT_RGB555_2X8_PADHI_LE =  0x1004
+MEDIA_BUS_FMT_RGB565_1X16         = 0x1017
+MEDIA_BUS_FMT_BGR565_2X8_BE       = 0x1005
+MEDIA_BUS_FMT_BGR565_2X8_LE       = 0x1006
+MEDIA_BUS_FMT_RGB565_2X8_BE       = 0x1007
+MEDIA_BUS_FMT_RGB565_2X8_LE       = 0x1008
+MEDIA_BUS_FMT_RGB666_1X18         = 0x1009
+MEDIA_BUS_FMT_RBG888_1X24         = 0x100e
+MEDIA_BUS_FMT_RGB666_1X24_CPADHI  = 0x1015
+MEDIA_BUS_FMT_RGB666_1X7X3_SPWG   = 0x1010
+MEDIA_BUS_FMT_BGR888_1X24         = 0x1013
+MEDIA_BUS_FMT_BGR888_3X8          = 0x101b
+MEDIA_BUS_FMT_GBR888_1X24         = 0x1014
+MEDIA_BUS_FMT_RGB888_1X24         = 0x100a
+MEDIA_BUS_FMT_RGB888_2X12_BE      = 0x100b
+MEDIA_BUS_FMT_RGB888_2X12_LE      = 0x100c
+MEDIA_BUS_FMT_RGB888_1X7X4_SPWG   = 0x1011
+MEDIA_BUS_FMT_RGB888_1X7X4_JEIDA  = 0x1012
+MEDIA_BUS_FMT_ARGB8888_1X32       = 0x100d
+MEDIA_BUS_FMT_RGB888_1X32_PADHI   = 0x100f
+MEDIA_BUS_FMT_RGB101010_1X30      = 0x1018
+MEDIA_BUS_FMT_RGB121212_1X36      = 0x1019
+MEDIA_BUS_FMT_RGB161616_1X48      = 0x101a
+MEDIA_BUS_FMT_Y8_1X8              = 0x2001
+MEDIA_BUS_FMT_UV8_1X8             = 0x2015
+MEDIA_BUS_FMT_UYVY8_1_5X8         = 0x2002
+MEDIA_BUS_FMT_VYUY8_1_5X8         = 0x2003
+MEDIA_BUS_FMT_YUYV8_1_5X8         = 0x2004
+MEDIA_BUS_FMT_YVYU8_1_5X8         = 0x2005
+MEDIA_BUS_FMT_UYVY8_2X8           = 0x2006
+MEDIA_BUS_FMT_VYUY8_2X8           = 0x2007
+MEDIA_BUS_FMT_YUYV8_2X8           = 0x2008
+MEDIA_BUS_FMT_YVYU8_2X8           = 0x2009
+MEDIA_BUS_FMT_Y10_1X10            = 0x200a
+MEDIA_BUS_FMT_Y10_2X8_PADHI_LE    = 0x202c
+MEDIA_BUS_FMT_UYVY10_2X10         = 0x2018
+MEDIA_BUS_FMT_VYUY10_2X10         = 0x2019
+MEDIA_BUS_FMT_YUYV10_2X10         = 0x200b
+MEDIA_BUS_FMT_YVYU10_2X10      = 0x200c
+MEDIA_BUS_FMT_Y12_1X12         = 0x2013
+MEDIA_BUS_FMT_UYVY12_2X12      = 0x201c
+MEDIA_BUS_FMT_VYUY12_2X12      = 0x201d
+MEDIA_BUS_FMT_YUYV12_2X12      = 0x201e
+MEDIA_BUS_FMT_YVYU12_2X12      = 0x201f
+MEDIA_BUS_FMT_UYVY8_1X16       = 0x200f
+MEDIA_BUS_FMT_VYUY8_1X16       = 0x2010
+MEDIA_BUS_FMT_YUYV8_1X16       = 0x2011
+MEDIA_BUS_FMT_YVYU8_1X16       = 0x2012
+MEDIA_BUS_FMT_YDYUYDYV8_1X16    =    0x2014
+MEDIA_BUS_FMT_UYVY10_1X20      = 0x201a
+MEDIA_BUS_FMT_VYUY10_1X20      = 0x201b
+MEDIA_BUS_FMT_YUYV10_1X20      = 0x200d
+MEDIA_BUS_FMT_YVYU10_1X20      = 0x200e
+MEDIA_BUS_FMT_VUY8_1X24        = 0x2024
+MEDIA_BUS_FMT_YUV8_1X24       =  0x2025
+MEDIA_BUS_FMT_UYYVYY8_0_5X24   =     0x2026
+MEDIA_BUS_FMT_UYVY12_1X24      = 0x2020
+MEDIA_BUS_FMT_VYUY12_1X24      = 0x2021
+MEDIA_BUS_FMT_YUYV12_1X24      = 0x2022
+MEDIA_BUS_FMT_YVYU12_1X24      = 0x2023
+MEDIA_BUS_FMT_YUV10_1X30       = 0x2016
+MEDIA_BUS_FMT_UYYVYY10_0_5X30  =     0x2027
+MEDIA_BUS_FMT_AYUV8_1X32       = 0x2017
+MEDIA_BUS_FMT_UYYVYY12_0_5X36  =     0x2028
+MEDIA_BUS_FMT_YUV12_1X36       = 0x2029
+MEDIA_BUS_FMT_YUV16_1X48       = 0x202a
+MEDIA_BUS_FMT_UYYVYY16_0_5X48  =     0x202b
+MEDIA_BUS_FMT_SBGGR8_1X8       = 0x3001
+MEDIA_BUS_FMT_SGBRG8_1X8       = 0x3013
+MEDIA_BUS_FMT_SGRBG8_1X8       = 0x3002
+MEDIA_BUS_FMT_SRGGB8_1X8       = 0x3014
+MEDIA_BUS_FMT_SBGGR10_ALAW8_1X8 =    0x3015
+MEDIA_BUS_FMT_SGBRG10_ALAW8_1X8  =   0x3016
+MEDIA_BUS_FMT_SGRBG10_ALAW8_1X8   =  0x3017
+MEDIA_BUS_FMT_SRGGB10_ALAW8_1X8   =  0x3018
+MEDIA_BUS_FMT_SBGGR10_DPCM8_1X8   =  0x300b
+MEDIA_BUS_FMT_SGBRG10_DPCM8_1X8   =  0x300c
+MEDIA_BUS_FMT_SGRBG10_DPCM8_1X8   =  0x3009
+MEDIA_BUS_FMT_SRGGB10_DPCM8_1X8   =  0x300d
+MEDIA_BUS_FMT_SBGGR10_2X8_PADHI_BE = 0x3003
+MEDIA_BUS_FMT_SBGGR10_2X8_PADHI_LE = 0x3004
+MEDIA_BUS_FMT_SBGGR10_2X8_PADLO_BE = 0x3005
+MEDIA_BUS_FMT_SBGGR10_2X8_PADLO_LE = 0x3006
+MEDIA_BUS_FMT_SBGGR10_1X10    =  0x3007
+MEDIA_BUS_FMT_SGBRG10_1X10    =  0x300e
+MEDIA_BUS_FMT_SGRBG10_1X10    =  0x300a
+MEDIA_BUS_FMT_SRGGB10_1X10    =  0x300f
+MEDIA_BUS_FMT_SBGGR12_1X12    =  0x3008
+MEDIA_BUS_FMT_SGBRG12_1X12    =  0x3010
+MEDIA_BUS_FMT_SGRBG12_1X12    =  0x3011
+MEDIA_BUS_FMT_SRGGB12_1X12    =  0x3012
+MEDIA_BUS_FMT_SBGGR14_1X14    =  0x3019
+MEDIA_BUS_FMT_SGBRG14_1X14    =  0x301a
+MEDIA_BUS_FMT_SGRBG14_1X14    =  0x301b
+MEDIA_BUS_FMT_SRGGB14_1X14    =  0x301c
+MEDIA_BUS_FMT_SBGGR16_1X16    =  0x301d
+MEDIA_BUS_FMT_SGBRG16_1X16    =  0x301e
+MEDIA_BUS_FMT_SGRBG16_1X16    =  0x301f
+MEDIA_BUS_FMT_SRGGB16_1X16    =  0x3020
+MEDIA_BUS_FMT_JPEG_1X8        =  0x4001
+MEDIA_BUS_FMT_S5C_UYVY_JPEG_1X8  =   0x5001
+MEDIA_BUS_FMT_AHSV8888_1X32    = 0x6001
 
 v4l2_colorspace_dict = {0:'DEFAULT',
                         1:'SMPTE170M',
